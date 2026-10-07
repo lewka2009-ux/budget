@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f766e">
+<title>Семейный бюджет</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="Бюджет">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="mobile-web-app-capable" content="yes">
+<style>
+:root{--bg:#f5f5f2;--ink:#1b1f1e;--mute:#6b7270;--acc:#0f766e}
+@media (prefers-color-scheme:dark){:root{--bg:#111413;--ink:#eceeed;--mute:#9aa29f;--acc:#2dd4bf}}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box}
+.box{max-width:420px;text-align:center}.logo{width:72px;height:72px;border-radius:18px;background:var(--acc);color:#fff;font-size:44px;
+  display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-weight:700}
+h1{font-size:22px;margin:0 0 8px}#msg{color:var(--mute)}
+</style>
+</head>
+<body>
+<div class="box"><div class="logo">฿</div><h1>Семейный бюджет</h1><p id="msg">Загрузка…</p></div>
+<script>
+(function(){
+  var APPK='famfin.app', SYK='famfin.sync';
+  function get(k){ try{ return JSON.parse(localStorage.getItem(k)||'null'); }catch(e){ return null; } }
+  function put(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+  function msg(t){ var m=document.getElementById('msg'); if(m) m.innerHTML=t; }
+  function show(html){ document.open(); document.write(html); document.close(); }
+  function run(){
+    if('serviceWorker' in navigator && location.protocol==='https:'){ navigator.serviceWorker.register('sw.js').catch(function(){}); }
+    var u=null; try{ u=new URLSearchParams(location.hash.slice(1)).get('u'); }catch(e){}
+    var sy=get(SYK)||{}, url=u||sy.url, cached=get(APPK);
+    if(cached && cached.html){ show(cached.html); return; }
+    if(!url){ msg('Откройте ссылку для подключения (её можно создать на уже подключённом телефоне: «Ещё» → «Ссылка для подключения другого телефона») или введите данные вручную:'
+      +'<input id="lu" placeholder="Адрес веб-приложения …/exec" style="display:block;width:100%;box-sizing:border-box;margin:14px 0 8px;padding:11px;border-radius:10px;border:1px solid #ccc;font:inherit">'
+      +'<input id="lk" placeholder="Ключ доступа" autocomplete="off" style="display:block;width:100%;box-sizing:border-box;margin:0 0 10px;padding:11px;border-radius:10px;border:1px solid #ccc;font:inherit">'
+      +'<button id="lb" style="width:100%;padding:12px;border:0;border-radius:12px;background:var(--acc);color:#fff;font:600 16px inherit">Подключить</button>');
+      document.getElementById('lb').onclick=function(){ var a=document.getElementById('lu').value.trim(), b=document.getElementById('lk').value.trim();
+        if(!/^https:/.test(a)||!b){ alert('Вставьте адрес, начинающийся с https, и ключ'); return; }
+        location.hash='u='+encodeURIComponent(a)+'&k='+encodeURIComponent(b); };
+      return; }
+    msg('Загружаю приложение…');
+    fetch(url+(url.indexOf('?')<0?'?':'&')+'app=1').then(function(r){ return r.json(); }).then(function(o){
+      if(!o || !o.ok || !o.html) throw new Error((o && o.error) || 'пустой ответ');
+      put(APPK,{v:o.v,html:o.html}); show(o.html);
+    }).catch(function(e){ msg('Не удалось загрузить приложение ('+e.message+'). Проверьте интернет и обновите страницу.'); });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',function(){ setTimeout(run,0); }); else setTimeout(run,0);
+  window.addEventListener('hashchange',function(){ if(!window.FF) run(); });
+})();
+</script>
+</body>
+</html>
